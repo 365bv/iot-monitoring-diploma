@@ -7,7 +7,7 @@ from typing import Optional
 # --- Settings ---
 BROKER_ADDRESS = "broker.hivemq.com" # Using a public broker for testing
 PORT = 1883
-TURBINE_IDS = ["WT-01", "WT-02", "WT-03", "WT-04", "WT-05"]
+TURBINE_IDS = [f"WT-{i:02d}" for i in range(1, 51)]
 TOPIC_PREFIX = "norway/energy/wind-turbine"
 
 # --- Logic ---
@@ -84,8 +84,8 @@ def run_emulator():
                 else:
                     print(f"⚠️ Failed to send message for {turbine_id} (code: {result.rc})")
 
-            print("--- Cycle complete, sleeping for 10 seconds ---")
-            time.sleep(10)
+            print("--- Cycle complete, sleeping for 5 seconds ---")
+            time.sleep(5)
             
     except KeyboardInterrupt:
         print("\n🛑 Emulator stopped by user.")
