@@ -12,6 +12,20 @@ The goal is to build a **commercially-relevant prototype** of an **Industrial Io
 * **Grafana** (for data visualization and dashboards)
 * **Docker** & **Docker Compose** (for containerization and deployment)
 
+## Project Architecture
+
+This system is built using a microservice architecture and is designed to run entirely within Docker Compose.
+
+1.  **Sensor Emulator (`sensor_emulator.py`):** A Python script that simulates a fleet of 50+ wind turbines. Every 5 seconds, it generates realistic data (vibration, temperature) and publishes it as JSON payloads to unique MQTT topics (e.g., `norway/energy/wind-turbine/WT-01/status`).
+
+2.  **MQTT Broker (`Mosquitto`):** A lightweight, containerized broker that receives all messages from the sensor fleet and routes them to any subscribed consumers.
+
+3.  **Data Collector (`data_collector.py`):** A separate Python consumer script that subscribes to the MQTT broker using a wildcard topic (`norway/energy/wind-turbine/+/status`). It receives the JSON data from *all* turbines, parses it, and writes it in batches to the database.
+
+4.  **Database (`InfluxDB`):** A high-performance time-series database, running in its own container, designed to store millions of data points from the monitoring system efficiently.
+
+5.  **Visualization (`Grafana`):** A containerized Grafana instance connected directly to InfluxDB. It provides a real-time dashboard to monitor the entire fleet's health, with the ability to filter by individual turbine.
+
 ## Project Status
 
-*(This project is currently in development. Stage 1: Building the sensor emulator.)*
+*(This project is currently in development. **Stage 2: Building the Data Collector (consumer)**)*
