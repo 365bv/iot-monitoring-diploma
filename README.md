@@ -28,4 +28,4 @@ This system is built using a microservice architecture and is designed to run en
 
 ## Project Status
 
-*(This project is currently in development. **Stage 2: Building the Data Collector (consumer)**)*
+*(This project is currently in development. **Stage 3: Database & Local Infrastructure (Docker)**)*
