@@ -48,11 +48,13 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
     
     if data:
         turbine_id = data.get("turbine_id", "Unknown")
+        wind = data.get("wind_speed_ms", "N/A")
+        rpm = data.get("rotor_speed_rpm", "N/A")
+        power = data.get("power_output_kw", "N/A")
         temp = data.get("gearbox_temp_c", "N/A")
-        vibration = data.get("vibration_hz", "N/A")
         
         # TODO: Replace this print statement with a write to InfluxDB in Stage 3
-        print(f"Received data from {turbine_id}: [Temp: {temp}°C, Vibration: {vibration}Hz]")
+        print(f"Received from {turbine_id}: [Wind: {wind}m/s, RPM: {rpm}, Power: {power}kW, Temp: {temp}°C]")
     else:
         # The error is already logged inside parse_payload
         pass

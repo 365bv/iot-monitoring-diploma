@@ -7,7 +7,14 @@ def test_parse_payload_success():
     Tests the "happy path" with a valid JSON payload.
     """
     # 1. Prepare: Create a valid payload (as bytes, like MQTT gives us)
-    valid_data = {"turbine_id": "WT-01", "temperature": 25.5}
+    valid_data = {
+        "turbine_id": "WT-01",
+        "wind_speed_ms": 12.5,
+        "rotor_speed_rpm": 10.1,
+        "power_output_kw": 1500,
+        "gearbox_temp_c": 65.7,
+        "timestamp": 1678886400
+    }
     payload_bytes = json.dumps(valid_data).encode("utf-8")
     
     # 2. Act: Run the function we are testing
@@ -17,6 +24,7 @@ def test_parse_payload_success():
     assert result is not None
     assert result == valid_data
     assert result["turbine_id"] == "WT-01"
+    assert result["power_output_kw"] == 1500
 
 def test_parse_payload_bad_json():
     """
