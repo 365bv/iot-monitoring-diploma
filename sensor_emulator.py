@@ -65,12 +65,23 @@ def run_emulator():
         while True:
             for turbine_id in TURBINE_IDS:
                 
-                vibration = round(random.uniform(0.5, 2.5), 3)
-                gearbox_temp = round(random.uniform(55.0, 70.0), 2)
+                wind_speed = round(random.uniform(5.0, 25.0), 2) # m/s
+    
+                rotor_speed = round((wind_speed * 0.8) + random.uniform(-0.5, 0.5), 2) 
                 
+                # Calculate ideal power + random noise
+                power_output_raw = (rotor_speed * 100) + random.uniform(-50, 50)
+                power_output = round(max(0, power_output_raw), 0)
+                    
+                # Gearbox temp increases with power output
+                gearbox_temp = round(60.0 + (power_output / 100) + random.uniform(-1, 1), 2)
+                
+
                 payload = json.dumps({
                     "turbine_id": turbine_id,
-                    "vibration_hz": vibration,
+                    "wind_speed_ms": wind_speed,
+                    "rotor_speed_rpm": rotor_speed,
+                    "power_output_kw": power_output,
                     "gearbox_temp_c": gearbox_temp,
                     "timestamp": int(time.time())
                 })
@@ -80,11 +91,12 @@ def run_emulator():
                 result = client.publish(topic, payload)
                 
                 if result.rc == mqtt.MQTT_ERR_SUCCESS:
-                    print(f"📩 Sent data for {turbine_id} to {topic}")
+                    print(f"📩 Sent data for {turbine_id} (Wind: {wind_speed} m/s)")
                 else:
                     print(f"⚠️ Failed to send message for {turbine_id} (code: {result.rc})")
-
-            print("--- Cycle complete, sleeping for 5 seconds ---")
+            
+            # 5. Wait 5 seconds before the *next cycle*
+            print(f"--- Cycle complete ({len(TURBINE_IDS)} messages sent), sleeping for 5 seconds ---")
             time.sleep(5)
             
     except KeyboardInterrupt:
