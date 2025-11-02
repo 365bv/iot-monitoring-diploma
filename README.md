@@ -26,6 +26,47 @@ This system is built using a microservice architecture and is designed to run en
 
 5.  **Visualization (`Grafana`):** A containerized Grafana instance connected directly to InfluxDB. It provides a real-time dashboard to monitor the entire fleet's health, with the ability to filter by individual turbine.
 
+
+## How to Run
+
+1.  **Clone the repository**
+    ```sh
+    git clone [your-repo-url]
+    cd iot-monitoring-diploma
+    ```
+
+2.  **Set up Environment Variables**
+    This project uses a `.env` file for configuration. A template is provided.
+    ```sh
+    # 1. Copy the template file
+    cp .env.example .env
+    
+    # 2. Edit the .env file and set your own passwords/tokens
+    # nano .env 
+    ```
+
+3.  **Run the System**
+    ```sh
+    docker-compose up -d
+    ```
+
+4.  **(In a separate terminal) Start the Sensor Emulator**
+    ```sh
+    # 1. Activate virtual environment
+    source .venv/bin/activate
+    # 2. Run the script
+    python sensor_emulator.py
+    ```
+
+5.  **(In a third terminal) Start the Data Collector**
+    ```sh
+    # 1. Activate virtual environment
+    source .venv/bin/activate
+    # 2. Run the script
+    python data_collector.py
+    ```
+
+    
 ## Project Status
 
 *(This project is currently in development. **Stage 3: Database & Local Infrastructure (Docker)**)*
