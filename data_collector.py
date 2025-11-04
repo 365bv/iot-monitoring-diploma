@@ -2,6 +2,7 @@ import paho.mqtt.client as mqtt
 import json
 import influxdb_client
 import os
+import logging
 from dotenv import load_dotenv
 from influxdb_client.client.write_api import SYNCHRONOUS
 from typing import Optional, Dict, Any
@@ -32,24 +33,24 @@ def parse_payload(payload: bytes) -> Optional[Dict[str, Any]]:
         data = json.loads(payload_str)
         return data
     except (json.JSONDecodeError, UnicodeDecodeError) as e:
-        print(f"⚠️ Failed to parse payload: {e}. Payload: {payload}")
+        logging.warning(f"⚠️ Failed to parse payload: {e}. Payload: {payload}")
         return None
     except Exception as e:
-        print(f"🔥 An unexpected error occurred in parse_payload: {e}")
+        logging.error(f"🔥 An unexpected error occurred in parse_payload: {e}")
         return None
 
 def on_connect(client: mqtt.Client, userdata, flags, rc: int):
     """Callback for when the client connects."""
     if rc == 0:
-        print(f"✅ Successfully connected to broker {BROKER_ADDRESS}")
+        logging.info(f"✅ Successfully connected to broker {BROKER_ADDRESS}")
         # Subscribing in on_connect ensures we re-subscribe if connection is lost
         client.subscribe(MQTT_TOPIC)
     else:
-        print(f"❌ Connection failed with code: {rc}")
+        logging.error(f"❌ Connection failed with code: {rc}")
 
 def on_subscribe(client: mqtt.Client, userdata, mid, granted_qos):
     """Callback for when the client successfully subscribes."""
-    print(f"🔔 Subscribed to topic: {MQTT_TOPIC}")
+    logging.info(f"🔔 Subscribed to topic: {MQTT_TOPIC}")
 
 def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
     """
@@ -78,11 +79,11 @@ def write_to_influxdb(write_api: influxdb_client.WriteApi, data: Dict[str, Any])
         )
         
         write_api.write(bucket=INFLUX_BUCKET, org=INFLUX_ORG, record=point)
-        
-        print(f"✅ [InfluxDB] Wrote data for {data.get('turbine_id')}")
-    
+
+        logging.debug(f"✅ [InfluxDB] Wrote data for {data.get('turbine_id')}")
+
     except Exception as e:
-        print(f"🔥 [InfluxDB] Error writing to database: {e}")
+        logging.error(f"🔥 [InfluxDB] Error writing to database: {e}")
 
 
 def setup_mqtt_client(influx_write_api: influxdb_client.WriteApi) -> Optional[mqtt.Client]:
@@ -99,7 +100,7 @@ def setup_mqtt_client(influx_write_api: influxdb_client.WriteApi) -> Optional[mq
     try:
         client.connect(BROKER_ADDRESS, PORT, 60)
     except Exception as e:
-        print(f"🔥 [MQTT] Failed to connect to broker: {e}")
+        logging.error(f"🔥 [MQTT] Failed to connect to broker: {e}")
         return None
     return client 
 
@@ -116,23 +117,30 @@ def run_collector():
         # Create a "Write API" client
         # SYNCHRONOUS means we write one point at a time
         write_api = influx_client.write_api(write_options=SYNCHRONOUS)
-        print("✅ [InfluxDB] Successfully connected")
+        logging.info("✅ [InfluxDB] Successfully connected")
     except Exception as e:
-        print(f"🔥 [InfluxDB] Failed to connect to InfluxDB: {e}")
+        logging.critical(f"🔥 [InfluxDB] Failed to connect to InfluxDB: {e}")
         return
 
     # 2. Set up MQTT Client (and give it the InfluxDB writer)
     mqtt_client = setup_mqtt_client(write_api)
     
     if mqtt_client is None:
-        print("Exiting program, MQTT client setup failed.")
+        logging.critical("Exiting program, MQTT client setup failed.")
         return
-    
-    print("🎧 Data collector is now listening for messages...")
+
+    logging.info("🎧 Data collector is now listening for messages...")
     mqtt_client.loop_forever()
 
 if __name__ == "__main__":
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] (data_collector) %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
+
     try:
         run_collector()
     except KeyboardInterrupt:
-        print("\n🛑 Collector stopped by user.")
+        logging.info("\n🛑 Collector stopped by user.")

@@ -3,6 +3,7 @@ import pandas as pd
 import influxdb_client
 import os
 import altair as alt
+import logging
 from dotenv import load_dotenv
 from typing import List
 
@@ -19,6 +20,12 @@ INFLUX_TOKEN = os.getenv("INFLUX_TOKEN")
 INFLUX_ORG = os.getenv("INFLUX_ORG")
 INFLUX_BUCKET = os.getenv("INFLUX_BUCKET")
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] (dashboard) %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+
 # --- InfluxDB Connection ---
 # Set up the client and query API
 try:
@@ -26,9 +33,9 @@ try:
         url=INFLUX_URL, token=INFLUX_TOKEN, org=INFLUX_ORG
     )
     query_api = influx_client.query_api()
-    print("✅ [InfluxDB] Successfully connected to InfluxDB for dashboard.")
+    logging.info("✅ [InfluxDB] Successfully connected to InfluxDB for dashboard.")
 except Exception as e:
-    print(f"🔥 [InfluxDB] Error connecting to InfluxDB: {e}")
+    logging.error(f"🔥 [InfluxDB] Error connecting to InfluxDB: {e}")
     st.error(f"Error connecting to InfluxDB: {e}")
 
 @st.cache_data(ttl=10) # Cache results for 10 seconds
@@ -42,7 +49,7 @@ def fetch_data(query: str) -> pd.DataFrame:
             return pd.concat(tables, ignore_index=True)
         return tables
     except Exception as e:
-        print(f"Error querying InfluxDB: {e}")
+        logging.error(f"🔥 [InfluxDB] Error querying InfluxDB: {e}")
         return pd.DataFrame()
 
 @st.cache_data(ttl=60) # Cache this list for 1 minute
@@ -122,7 +129,7 @@ if not data_df.empty:
         color=alt.Color('turbine_id', title='Turbine'), # <-- THE MAGIC
         tooltip=['_time', 'turbine_id', 'power_output_kw']
     ).interactive() # Make the chart zoomable/pannable
-    st.altair_chart(chart_power, use_container_width=True)
+    st.altair_chart(chart_power, width='stretch')
 
 
     st.subheader("Gearbox Temperature (°C)", anchor=False)
@@ -132,7 +139,7 @@ if not data_df.empty:
         color=alt.Color('turbine_id', title='Turbine'), # <-- THE MAGIC
         tooltip=['_time', 'turbine_id', 'gearbox_temp_c']
     ).interactive()
-    st.altair_chart(chart_temp, use_container_width=True)
+    st.altair_chart(chart_temp, width='stretch')
 
     
     st.subheader("Rotor Speed (RPM)", anchor=False)
@@ -142,7 +149,7 @@ if not data_df.empty:
         color=alt.Color('turbine_id', title='Turbine'),
         tooltip=['_time', 'turbine_id', 'rotor_speed_rpm']
     ).interactive()
-    st.altair_chart(chart_rpm, use_container_width=True)
+    st.altair_chart(chart_rpm, width='stretch')
 
     st.subheader("Wind Speed (m/s)", anchor=False)
     chart_wind = alt.Chart(data_df_for_charts).mark_line(point=True).encode(
@@ -151,7 +158,7 @@ if not data_df.empty:
         color=alt.Color('turbine_id', title='Turbine'),
         tooltip=['_time', 'turbine_id', 'wind_speed_ms']
     ).interactive()
-    st.altair_chart(chart_wind, use_container_width=True)
+    st.altair_chart(chart_wind, width='stretch')
 
     # --- (END FIX) ---
 

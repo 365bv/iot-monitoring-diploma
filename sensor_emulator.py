@@ -2,6 +2,7 @@ import paho.mqtt.client as mqtt
 import time
 import random
 import json
+import logging
 from typing import Optional
 
 # --- Settings ---
@@ -15,16 +16,16 @@ TOPIC_PREFIX = "norway/energy/wind-turbine"
 def on_connect(client: mqtt.Client, userdata, flags, rc: int):
     """Callback function executed when the client connects to the broker."""
     if rc == 0:
-        print(f"✅ Successfully connected to broker {BROKER_ADDRESS}")
+        logging.info(f"✅ Successfully connected to broker {BROKER_ADDRESS}")
         # Signal the main loop that we are connected
         client.connected_flag = True
     else:
-        print(f"❌ Connection failed with code: {rc}")
+        logging.error(f"❌ Connection failed with code: {rc}")
         client.loop_stop() # Stop the loop if connection failed
 
 def on_disconnect(client: mqtt.Client, userdata, rc: int):
     """Callback executed when the client disconnects."""
-    print(f"🔌 Disconnected from broker with code: {rc}")
+    logging.warning(f"🔌 Disconnected from broker with code: {rc}")
     client.connected_flag = False
 
 def setup_client() -> Optional[mqtt.Client]:
@@ -41,7 +42,7 @@ def setup_client() -> Optional[mqtt.Client]:
         client.connect(BROKER_ADDRESS, PORT, 60)
         client.loop_start() # Starts a background thread to handle network loops
     except Exception as e:
-        print(f"🔥 Failed to connect to broker: {e}")
+        logging.error(f"🔥 Failed to connect to broker: {e}")
         return None
     return client
 
@@ -50,16 +51,16 @@ def run_emulator():
     client = setup_client()
     
     if client is None:
-        print("Exiting program, client setup failed.")
+        logging.critical("Exiting program, client setup failed.")
         return
 
-    print("⏳ Attempting to connect...")
+    logging.info("⏳ Attempting to connect...")
     while not client.connected_flag:
         # Wait for the on_connect callback to set the flag
         time.sleep(1) 
-    
-    print(f"🚀 Sensor fleet emulator started. Publishing data for {len(TURBINE_IDS)} turbines.")
-    print("Press CTRL+C to stop.")
+
+    logging.info(f"🚀 Sensor fleet emulator started. Publishing data for {len(TURBINE_IDS)} turbines.")
+    logging.info("Press CTRL+C to stop.")
 
     try:
         while True:
@@ -91,16 +92,16 @@ def run_emulator():
                 result = client.publish(topic, payload)
                 
                 if result.rc == mqtt.MQTT_ERR_SUCCESS:
-                    print(f"📩 Sent data for {turbine_id} (Wind: {wind_speed} m/s)")
+                    logging.debug(f"📩 Sent data for {turbine_id} (Wind: {wind_speed} m/s)")
                 else:
-                    print(f"⚠️ Failed to send message for {turbine_id} (code: {result.rc})")
-            
+                    logging.warning(f"⚠️ Failed to send message for {turbine_id} (code: {result.rc})")
+
             # 5. Wait 5 seconds before the *next cycle*
-            print(f"--- Cycle complete ({len(TURBINE_IDS)} messages sent), sleeping for 5 seconds ---")
+            logging.info(f"--- Cycle complete ({len(TURBINE_IDS)} messages sent), sleeping for 5 seconds ---")
             time.sleep(5)
             
     except KeyboardInterrupt:
-        print("\n🛑 Emulator stopped by user.")
+        logging.info("🛑 Emulator stopped by user.")
     finally:
         if client.connected_flag:
             client.disconnect()
@@ -108,4 +109,11 @@ def run_emulator():
 
 # --- Start ---
 if __name__ == "__main__":
+    
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] (sensor_emulator) %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
+    
     run_emulator()
