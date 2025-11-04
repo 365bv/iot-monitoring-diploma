@@ -1,5 +1,6 @@
 services:
   
+  # --- 1. Infrastructure Services ---
   mqtt_broker:
     image: eclipse-mosquitto:2.0.22
     ports:
@@ -27,9 +28,11 @@ services:
     networks:
       - iot-net
 
-sensor_emulator:
+  # --- 2. Python Application Services ---
+  sensor_emulator:
     build:
-      context: ./sensor_emulator
+      context: .
+      dockerfile: sensor_emulator/Dockerfile
     depends_on:
       - mqtt_broker
     networks:
@@ -37,9 +40,10 @@ sensor_emulator:
     env_file:
       - .env
 
-data_collector:
+  data_collector:
     build:
-      context: ./data_collector
+      context: .
+      dockerfile: data_collector/Dockerfile
     depends_on:
       - mqtt_broker
       - database
@@ -48,6 +52,23 @@ data_collector:
     env_file:
       - .env
 
+  # --- 3. Our Dashboard Service ---
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: dashboard/Dockerfile
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./dashboard:/app
+    depends_on:
+      - database
+      - data_collector
+    networks:
+      - iot-net
+    env_file:
+      - .env
 volumes:
   mosquitto_data:
   mosquitto_log:

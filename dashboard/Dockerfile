@@ -14,7 +14,7 @@ WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 
 # Copy the application code for this specific service
-COPY dashboard.py .
+COPY dashboard/dashboard.py .
 
 # Add the venv to the PATH
 ENV PATH="/opt/venv/bin:$PATH"

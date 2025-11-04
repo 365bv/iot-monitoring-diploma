@@ -15,7 +15,7 @@ warnings.simplefilter("ignore", MissingPivotFunction)
 
 # --- Load Config (from .env file) ---
 load_dotenv()
-INFLUX_URL = "http://localhost:8086"
+INFLUX_URL = "http://database:8086"
 INFLUX_TOKEN = os.getenv("INFLUX_TOKEN")
 INFLUX_ORG = os.getenv("INFLUX_ORG")
 INFLUX_BUCKET = os.getenv("INFLUX_BUCKET")
