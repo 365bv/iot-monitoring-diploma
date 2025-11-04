@@ -69,6 +69,7 @@ services:
       - iot-net
     env_file:
       - .env
+      
 volumes:
   mosquitto_data:
   mosquitto_log:

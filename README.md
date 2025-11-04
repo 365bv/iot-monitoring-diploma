@@ -1,32 +1,108 @@
-# Industrial IoT (IIoT) Data Pipeline for Energy Monitoring
+# IIoT Wind Turbine Monitoring Pipeline
 
-This is the repository for my Bachelor's Diploma project (KPI, 2026).
+This repository contains the full source code for my Bachelor's Diploma project (KPI, 2026). It is a commercially-relevant prototype of an end-to-end Industrial IoT (IIoT) data pipeline, built to monitor the real-time health and performance of a wind turbine fleet.
 
-The goal is to build a **commercially-relevant prototype** of an **Industrial IoT (IIoT) data pipeline**. This system simulates, collects, stores, and visualizes real-time status data from a **wind turbine fleet**, a use case directly applicable to the Norwegian energy sector.
+The system simulates a fleet of 50 turbines, collects telemetry, stores it in a time-series database, and visualizes the data on an interactive web dashboard—all containerized with Docker.
 
-## Core Tech Stack
+![Streamlit Dashboard Screenshot](https://github.com/user-attachments/assets/3d8d71a6-a574-4650-b961-9d247f513158) 
 
-* **Python** (for data producers, consumers, and dashboarding)
-* **Streamlit** (for the web dashboard)
-* **Pandas** (for data manipulation)
-* **MQTT** (for data transport)
-* **InfluxDB** (for time-series data storage)
-* **Docker** & **Docker Compose** (for containerization and deployment)
+## 🚀 Key Features
 
-## Project Architecture
+* **Microservice Architecture:** The entire system runs as a set of 5 containerized services using Docker Compose.
+* **Realistic Data Simulation:** A Python script simulates a fleet of 50+ turbines, generating correlated data (wind speed, RPM, power output, temperature).
+* **Scalable Data Transport:** Uses **MQTT (Mosquitto)** with wildcard topics, allowing the system to scale to thousands of sensors without code changes.
+* **Time-Series Storage:** Utilizes **InfluxDB** as a high-performance database, optimized for high-volume, time-stamped telemetry data.
+* **Interactive Web Dashboard:** A **Streamlit** app (written in pure Python) provides a filterable, real-time view of the fleet's health, replacing complex UI configuration.
+* **Tested & Robust:** The data collection logic includes **unit tests (Pytest)** to ensure reliable data parsing and error handling.
 
-This system is built using a microservice architecture. The core infrastructure (broker, database) runs via Docker Compose, while the Python scripts interact with it.
+## 🛠️ Core Tech Stack
 
-1.  **Sensor Emulator (`sensor_emulator.py`):** A Python script that simulates a fleet of 50+ wind turbines, publishing real-time KPIs (wind speed, RPM, power output, temp) as JSON payloads to unique MQTT topics.
+* **Python 3.12**
+* **Docker & Docker Compose**
+* **Streamlit** (Web Dashboard)
+* **Pandas & Altair** (Data processing & Charting)
+* **MQTT** (Mosquitto)
+* **InfluxDB 2.7** (Time-series DB)
+* **Pytest & Pytest-Mock** (Unit Testing)
 
-2.  **MQTT Broker (`Mosquitto`):** A lightweight, containerized broker that routes messages from all sensors.
+## ⚙️ Project Architecture
 
-3.  **Data Collector (`data_collector.py`):** A Python consumer script that subscribes to all sensor topics (using a wildcard). It parses the data, validates it (using unit tests), and writes it efficiently to the InfluxDB database.
+This system is composed of 5 services managed by `docker-compose.yml`:
 
-4.  **Database (`InfluxDB`):** A high-performance time-series database running in Docker, storing all incoming telemetry.
+1.  **`sensor_emulator` (Python/Docker):** Simulates 50+ turbines, publishing JSON data to MQTT.
+2.  **`mqtt_broker` (Mosquitto/Docker):** The message broker that routes all telemetry.
+3.  **`data_collector` (Python/Docker):** Subscribes to the MQTT broker, parses data (validated by unit tests), and writes it to InfluxDB.
+4.  **`database` (InfluxDB/Docker):** Stores all incoming time-series data.
+5.  **`dashboard` (Streamlit/Docker):** The Python web app that queries InfluxDB (using Flux) and displays interactive charts (using Altair).
 
-5.  **Visualization (`dashboard.py`):** A **Streamlit** web application written entirely in Python. It queries the InfluxDB database (using Flux and `aggregateWindow` for optimization) and displays interactive, auto-refreshing charts and data tables for the entire fleet or individual turbines.
+## ⚡ How to Run
 
-## Project Status
+The entire system is designed to run with a single command.
 
-*(This project is currently in development. **Stage 5: Full Containerization (Dockerizing Python apps)**)*
+### Prerequisites
+
+* Git
+* Docker Desktop (must be running)
+
+### 1. Clone the Repository
+
+```sh
+git clone https://github.com/365bv/iot-monitoring-diploma.git
+
+cd iot-monitoring-diploma
+```
+### 2. Set Up Environment Variables
+
+This project uses a .env file for configuration. A template is provided.
+
+```sh
+# 1. Copy the template file
+cp .env.example .env
+
+# 2. (Optional) Edit the .env file if you wish to change the default passwords/tokens.
+# The default values will work out-of-the-box.
+
+```
+### 3. Build and Run the System
+
+```sh
+docker-compose up --build -d
+```
+
+### 4. View the Dashboard
+
+1. Wait about 30-60 seconds for all services to start and for data to begin flowing.
+
+2. Open your browser and go to: http://localhost:8501 or http://0.0.0.0:8501
+
+3. You will see the live dashboard.
+
+## Other Service:
+
+* InfluxDB UI: http://localhost:8086 (Login with credentials from .env file)
+
+* MQTT Broker: localhost:1883
+
+## How to Stop the System:
+
+```sh
+docker-compose down
+```
+## 🧪 Running Tests
+
+ To run the unit tests for the data collector:
+
+### Set up the local Python environment:
+
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+### Run pytest:
+
+```sh
+pytest
+```
+## 📄 License
+This project is licensed under the MIT License.
