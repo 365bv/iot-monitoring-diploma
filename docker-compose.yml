@@ -23,15 +23,7 @@ services:
       - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_TOKEN}
 
-  visualizer:
-    image: grafana/grafana:11.1.0 
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana_data:/var/lib/grafana
-
 volumes:
   mosquitto_data:
   mosquitto_log:
   influxdb_data:
-  grafana_data:
