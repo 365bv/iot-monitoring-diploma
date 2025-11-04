@@ -11,12 +11,12 @@ from typing import Optional, Dict, Any
 load_dotenv()
 
 # --- Settings ---
-BROKER_ADDRESS = "localhost"
+BROKER_ADDRESS = "mqtt_broker"
 PORT = 1883
 MQTT_TOPIC = "norway/energy/wind-turbine/+/status"
 
 # InfluxDB Settings
-INFLUX_URL = "http://localhost:8086"
+INFLUX_URL = "http://database:8086"
 INFLUX_TOKEN = os.getenv("INFLUX_TOKEN")
 INFLUX_ORG = os.getenv("INFLUX_ORG")
 INFLUX_BUCKET = os.getenv("INFLUX_BUCKET")

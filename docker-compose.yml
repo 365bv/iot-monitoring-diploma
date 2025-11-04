@@ -8,6 +8,8 @@ services:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
+    networks:
+      - iot-net
 
   database:
     image: influxdb:2.7
@@ -22,8 +24,35 @@ services:
       - DOCKER_INFLUXDB_INIT_ORG=${INFLUX_ORG}
       - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_TOKEN}
+    networks:
+      - iot-net
+
+sensor_emulator:
+    build:
+      context: ./sensor_emulator
+    depends_on:
+      - mqtt_broker
+    networks:
+      - iot-net
+    env_file:
+      - .env
+
+data_collector:
+    build:
+      context: ./data_collector
+    depends_on:
+      - mqtt_broker
+      - database
+    networks:
+      - iot-net
+    env_file:
+      - .env
 
 volumes:
   mosquitto_data:
   mosquitto_log:
   influxdb_data:
+
+networks:
+  iot-net:
+    driver: bridge

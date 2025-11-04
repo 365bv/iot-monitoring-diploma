@@ -6,7 +6,7 @@ import logging
 from typing import Optional
 
 # --- Settings ---
-BROKER_ADDRESS = "localhost"
+BROKER_ADDRESS = "mqtt_broker"
 PORT = 1883
 TURBINE_IDS = [f"WT-{i:02d}" for i in range(1, 51)]
 TOPIC_PREFIX = "norway/energy/wind-turbine"

@@ -5,7 +5,7 @@ Uses pytest and pytest-mock.
 
 import json
 import pytest
-from data_collector import parse_payload, write_to_influxdb
+from data_collector.data_collector import parse_payload, write_to_influxdb
 from influxdb_client import Point
 
 TEST_TIMESTAMP = 1762134600
