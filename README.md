@@ -22,13 +22,10 @@ The system simulates a fleet of 50 turbines, collects telemetry, stores it in a 
 
 ## 🛠️ Core Tech Stack
 
-* **Python 3.12**
-* **Docker & Docker Compose**
-* **Streamlit** (Web Dashboard)
-* **Pandas & Altair** (Data processing & Charting)
-* **MQTT** (Mosquitto)
-* **InfluxDB 2.7** (Time-series DB)
-* **Pytest & Pytest-Mock** (Unit Testing)
+* **Application:** Python 3.12, Streamlit, Pandas, Altair
+* **Infrastructure:** Docker & Docker Compose
+* **Data Pipeline:** MQTT (Mosquitto), InfluxDB 2.7
+* **Testing & DevOps:** Pytest, Pytest-Mock, GitHub Actions
 
 ## 🐳 Docker Hub Images
 
