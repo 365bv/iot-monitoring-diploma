@@ -51,7 +51,17 @@ services:
       - iot-net
     env_file:
       - .env
-
+  
+  alerter:
+    build:
+      context: .
+      dockerfile: alerter/Dockerfile
+    depends_on:
+      - mqtt_broker
+    networks:
+      - iot-net
+    env_file:
+      - .env
   # --- 3. Our Dashboard Service ---
 
   dashboard:

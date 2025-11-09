@@ -15,7 +15,7 @@ TOPIC_PREFIX = "norway/energy/wind-turbine"
 BASE_TEMP_C = 60.0
 MAX_WIND_SPEED_MS = 25.0
 MIN_WIND_SPEED_MS = 5.0
-ANOMALY_CHANCE = 0.01
+ANOMALY_CHANCE = 0.0015
 
 # --- Logic ---
 
