@@ -62,8 +62,8 @@ services:
       - iot-net
     env_file:
       - .env
+  
   # --- 3. Our Dashboard Service ---
-
   dashboard:
     build:
       context: .
