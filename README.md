@@ -1,5 +1,7 @@
 # IIoT Wind Turbine Monitoring Pipeline
 
+[![Python CI](https://github.com/365bv/iot-monitoring-diploma/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/365bv/iot-monitoring-diploma/actions/workflows/ci-cd.yml)
+
 This repository contains the full source code for my Bachelor's Diploma project (KPI, 2026). It is a commercially-relevant prototype of an end-to-end Industrial IoT (IIoT) data pipeline, built to monitor the real-time health and performance of a wind turbine fleet.
 
 The system simulates a fleet of 50 turbines, collects telemetry, stores it in a time-series database, and visualizes the data on an interactive web dashboard—all containerized with Docker.
@@ -14,6 +16,9 @@ The system simulates a fleet of 50 turbines, collects telemetry, stores it in a 
 * **Time-Series Storage:** Utilizes **InfluxDB** as a high-performance database, optimized for high-volume, time-stamped telemetry data.
 * **Interactive Web Dashboard:** A **Streamlit** app (written in pure Python) provides a filterable, real-time view of the fleet's health, replacing complex UI configuration.
 * **Tested & Robust:** The data collection logic includes **unit tests (Pytest)** to ensure reliable data parsing and error handling.
+* **Fully Automated CI/CD:** A **GitHub Actions** pipeline automatically:
+    *  **CI:** Runs all **Pytest** unit tests on every push.
+    *  **CD:** Builds and pushes new, production-ready Docker images to **Docker Hub** on every successful merge to `main`.
 
 ## 🛠️ Core Tech Stack
 
@@ -24,6 +29,13 @@ The system simulates a fleet of 50 turbines, collects telemetry, stores it in a 
 * **MQTT** (Mosquitto)
 * **InfluxDB 2.7** (Time-series DB)
 * **Pytest & Pytest-Mock** (Unit Testing)
+
+## 🐳 Docker Hub Images
+
+This project's CD pipeline automatically builds and publishes the following images:
+* **Sensor Emulator:** `hub.docker.com/r/365bv/sensor-emulator`
+* **Data Collector:** `hub.docker.com/r/365bv/data-collector`
+* **Dashboard:** `hub.docker.com/r/365bv/dashboard`
 
 ## ⚙️ Project Architecture
 
