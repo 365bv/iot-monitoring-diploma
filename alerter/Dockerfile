@@ -1,4 +1,3 @@
-# Stage 1: The "Builder"
 FROM python:3.12-slim AS builder
 WORKDIR /app
 COPY requirements.txt .
@@ -14,7 +13,7 @@ FROM python:3.12-slim
 WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 
-COPY data_collector/data_collector.py .
+COPY alerter/alerter.py .
 
 ENV PATH="/opt/venv/bin:$PATH"
-CMD ["python", "data_collector.py"]
+CMD ["python", "alerter.py"]

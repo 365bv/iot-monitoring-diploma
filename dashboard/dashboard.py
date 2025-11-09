@@ -107,7 +107,7 @@ flux_query = f'''
       |> range(start: -1h) // Query data from the last 1 hour
       |> filter(fn: (r) => r["_measurement"] == "turbine_status")
       |> filter(fn: (r) => {query_filter})
-      |> aggregateWindow(every: 10s, fn: mean, createEmpty: false)
+      |> aggregateWindow(every: 10s, fn: max, createEmpty: false)
       |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
       |> drop(columns: ["_start", "_stop", "_measurement"])
 '''

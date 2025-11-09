@@ -3,13 +3,19 @@ import time
 import random
 import json
 import logging
-from typing import Optional
+from typing import Optional, Dict
 
 # --- Settings ---
 BROKER_ADDRESS = "mqtt_broker"
 PORT = 1883
 TURBINE_IDS = [f"WT-{i:02d}" for i in range(1, 51)]
 TOPIC_PREFIX = "norway/energy/wind-turbine"
+
+# --- Simulation Constants ---
+BASE_TEMP_C = 60.0
+MAX_WIND_SPEED_MS = 25.0
+MIN_WIND_SPEED_MS = 5.0
+ANOMALY_CHANCE = 0.0015
 
 # --- Logic ---
 
@@ -60,43 +66,59 @@ def run_emulator():
         time.sleep(1) 
 
     logging.info(f"🚀 Sensor fleet emulator started. Publishing data for {len(TURBINE_IDS)} turbines.")
-    logging.info("Press CTRL+C to stop.")
 
+    fleet_state = {
+        turbine_id: {"wind_speed_ms": random.uniform(MIN_WIND_SPEED_MS, MAX_WIND_SPEED_MS)}
+        for turbine_id in TURBINE_IDS
+    }
+    
     try:
         while True:
             for turbine_id in TURBINE_IDS:
                 
-                wind_speed = round(random.uniform(5.0, 25.0), 2) # m/s
-    
-                rotor_speed = round((wind_speed * 0.8) + random.uniform(-0.5, 0.5), 2) 
+                # --- Simulate smooth data changes ---
+                current_wind_speed = fleet_state[turbine_id]["wind_speed_ms"]
                 
-                # Calculate ideal power + random noise
+                wind_change = random.uniform(-0.5, 0.5)
+                new_wind_speed = round(current_wind_speed + wind_change, 2)
+                
+                new_wind_speed = max(MIN_WIND_SPEED_MS, min(new_wind_speed, MAX_WIND_SPEED_MS))
+
+                fleet_state[turbine_id]["wind_speed_ms"] = new_wind_speed
+                
+                # Calculate other KPIs based on new wind speed
+                rotor_speed = round((new_wind_speed * 0.8) + random.uniform(-0.5, 0.5), 2) 
                 power_output_raw = (rotor_speed * 100) + random.uniform(-50, 50)
                 power_output = round(max(0, power_output_raw), 0)
-                    
-                # Gearbox temp increases with power output
-                gearbox_temp = round(60.0 + (power_output / 100) + random.uniform(-1, 1), 2)
+                gearbox_temp = round(BASE_TEMP_C + (power_output / 100) + random.uniform(-1, 1), 2)
                 
-
+                is_anomaly = False
+                
+                # --- Introduce rare anomalies ---
+                if random.random() < ANOMALY_CHANCE:
+                    logging.warning(f"🚨 Generating ANOMALY for {turbine_id}!")
+                    is_anomaly = True
+                    # Overwrite normal temp with a critical, overheating value
+                    gearbox_temp = round(random.uniform(90.0, 105.0), 2)
+                    
                 payload = json.dumps({
                     "turbine_id": turbine_id,
-                    "wind_speed_ms": wind_speed,
+                    "wind_speed_ms": new_wind_speed,
                     "rotor_speed_rpm": rotor_speed,
                     "power_output_kw": power_output,
                     "gearbox_temp_c": gearbox_temp,
-                    "timestamp": int(time.time())
+                    "timestamp": int(time.time()),
+                    "is_anomaly": is_anomaly
                 })
                 
                 topic = f"{TOPIC_PREFIX}/{turbine_id}/status"
                 
                 result = client.publish(topic, payload)
                 
-                if result.rc == mqtt.MQTT_ERR_SUCCESS:
-                    logging.debug(f"📩 Sent data for {turbine_id} (Wind: {wind_speed} m/s)")
-                else:
+                if result.rc != mqtt.MQTT_ERR_SUCCESS:
                     logging.warning(f"⚠️ Failed to send message for {turbine_id} (code: {result.rc})")
 
-            # 5. Wait 5 seconds before the *next cycle*
+            # Wait 5 seconds before the next cycle
             logging.info(f"--- Cycle complete ({len(TURBINE_IDS)} messages sent), sleeping for 5 seconds ---")
             time.sleep(5)
             
