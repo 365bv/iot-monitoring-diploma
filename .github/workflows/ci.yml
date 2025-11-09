@@ -59,7 +59,7 @@ jobs:
           uses: docker/build-push-action@v6.18.0
           with:
             context: .
-            dockerfile: sensor_emulator/Dockerfile
+            file: sensor_emulator/Dockerfile
             push: true
             tags: ${{ secrets.DOCKERHUB_USERNAME }}/sensor-emulator:latest
 
@@ -67,7 +67,7 @@ jobs:
           uses: docker/build-push-action@v6.18.0
           with:
             context: .
-            dockerfile: data_collector/Dockerfile
+            file: data_collector/Dockerfile
             push: true
             tags: ${{ secrets.DOCKERHUB_USERNAME }}/data-collector:latest
 
@@ -75,6 +75,6 @@ jobs:
           uses: docker/build-push-action@v6.18.0
           with:
             context: .
-            dockerfile: dashboard/Dockerfile
+            file: dashboard/Dockerfile
             push: true
             tags: ${{ secrets.DOCKERHUB_USERNAME }}/dashboard:latest
