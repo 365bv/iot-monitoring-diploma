@@ -10,7 +10,7 @@ The system simulates a fleet of 50 turbines, collects telemetry, stores it in a 
 
 ## 🚀 Key Features
 
-* **Microservice Architecture:** The entire system runs as a set of 5 containerized services using Docker Compose.
+* **Microservice Architecture:** The entire system runs as a set of 6 containerized services using Docker Compose.
 * **Realistic Data Simulation:** A Python script simulates a fleet of 50+ turbines, generating correlated data (wind speed, RPM, power output, temperature).
 * **Scalable Data Transport:** Uses **MQTT (Mosquitto)** with wildcard topics, allowing the system to scale to thousands of sensors without code changes.
 * **Real-Time Alerting:** A dedicated Python "watchdog" service (`alerter`) monitors the data stream for anomalies (e.g., high temperature) and logs critical alerts.
@@ -38,7 +38,7 @@ This project's CD pipeline automatically builds and publishes the following imag
 
 ## ⚙️ Project Architecture
 
-This system is composed of 5 services managed by `docker-compose.yml`:
+This system is composed of 6 services managed by `docker-compose.yml`:
 
 1.  **`sensor_emulator` (Python/Docker):** Simulates 50+ turbines, publishing JSON data to MQTT.
 2.  **`mqtt_broker` (Mosquitto/Docker):** The message broker that routes all telemetry.
