@@ -2,6 +2,7 @@ import paho.mqtt.client as mqtt
 import time
 import random
 import json
+import os
 import logging
 from typing import Optional, Dict
 
@@ -10,6 +11,7 @@ BROKER_ADDRESS = "mqtt_broker"
 PORT = 1883
 TURBINE_IDS = [f"WT-{i:02d}" for i in range(1, 51)]
 TOPIC_PREFIX = "norway/energy/wind-turbine"
+QOS_LEVEL = int(os.getenv("MQTT_QOS", "0"))
 
 # --- Simulation Constants ---
 BASE_TEMP_C = 60.0
@@ -22,8 +24,7 @@ ANOMALY_CHANCE = 0.0015
 def on_connect(client: mqtt.Client, userdata, flags, rc: int):
     """Callback function executed when the client connects to the broker."""
     if rc == 0:
-        logging.info(f"✅ Successfully connected to broker {BROKER_ADDRESS}")
-        # Signal the main loop that we are connected
+        logging.info(f"✅ Successfully connected to broker {BROKER_ADDRESS} (QoS: {QOS_LEVEL})")
         client.connected_flag = True
     else:
         logging.error(f"❌ Connection failed with code: {rc}")
@@ -107,13 +108,13 @@ def run_emulator():
                     "rotor_speed_rpm": rotor_speed,
                     "power_output_kw": power_output,
                     "gearbox_temp_c": gearbox_temp,
-                    "timestamp": int(time.time()),
+                    "timestamp_ns": time.time_ns(),
                     "is_anomaly": is_anomaly
                 })
                 
                 topic = f"{TOPIC_PREFIX}/{turbine_id}/status"
                 
-                result = client.publish(topic, payload)
+                result = client.publish(topic, payload, qos=QOS_LEVEL)
                 
                 if result.rc != mqtt.MQTT_ERR_SUCCESS:
                     logging.warning(f"⚠️ Failed to send message for {turbine_id} (code: {result.rc})")

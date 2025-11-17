@@ -3,6 +3,7 @@ import json
 import influxdb_client
 import os
 import logging
+import time
 from dotenv import load_dotenv
 from influxdb_client.client.write_api import SYNCHRONOUS
 from typing import Optional, Dict, Any
@@ -14,6 +15,7 @@ load_dotenv()
 BROKER_ADDRESS = "mqtt_broker"
 PORT = 1883
 MQTT_TOPIC = "norway/energy/wind-turbine/+/status"
+QOS_LEVEL = int(os.getenv("MQTT_QOS", "0"))
 
 # InfluxDB Settings
 INFLUX_URL = "http://database:8086"
@@ -44,13 +46,13 @@ def on_connect(client: mqtt.Client, userdata, flags, rc: int):
     if rc == 0:
         logging.info(f"✅ Successfully connected to broker {BROKER_ADDRESS}")
         # Subscribing in on_connect ensures we re-subscribe if connection is lost
-        client.subscribe(MQTT_TOPIC)
+        client.subscribe(MQTT_TOPIC, qos=QOS_LEVEL)
     else:
         logging.error(f"❌ Connection failed with code: {rc}")
 
 def on_subscribe(client: mqtt.Client, userdata, mid, granted_qos):
     """Callback for when the client successfully subscribes."""
-    logging.info(f"🔔 Subscribed to topic: {MQTT_TOPIC}")
+    logging.info(f"🔔 Subscribed to topic: {MQTT_TOPIC} (QoS: {QOS_LEVEL})")
 
 def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
     """
@@ -68,6 +70,13 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
 def write_to_influxdb(write_api: influxdb_client.WriteApi, data: Dict[str, Any]):
     """Formats and writes a data point to InfluxDB."""
     try:
+        recived_at_ns = time.time_ns()
+        sent_an_ns = data.get("timestamp_ns")
+        latency_ns = None
+        
+        if sent_an_ns:
+            latency_ns = recived_at_ns - sent_an_ns
+            
         point = (
             influxdb_client.Point("turbine_status")
             .tag("turbine_id", data.get("turbine_id", "Unknown"))
@@ -75,7 +84,8 @@ def write_to_influxdb(write_api: influxdb_client.WriteApi, data: Dict[str, Any])
             .field("rotor_speed_rpm", data.get("rotor_speed_rpm"))
             .field("power_output_kw", data.get("power_output_kw"))
             .field("gearbox_temp_c", data.get("gearbox_temp_c"))
-            .time(data.get("timestamp"), write_precision="s") # 's' for seconds
+            .field("latency_ns", latency_ns)
+            .time(data.get("timestamp_ns"), write_precision="ns") # 'ns' for nanoseconds
         )
         
         write_api.write(bucket=INFLUX_BUCKET, org=INFLUX_ORG, record=point)

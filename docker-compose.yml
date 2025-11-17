@@ -39,6 +39,8 @@ services:
       - iot-net
     env_file:
       - .env
+    environment:
+    - MQTT_QOS=${MQTT_QOS}
 
   data_collector:
     build:
@@ -51,6 +53,8 @@ services:
       - iot-net
     env_file:
       - .env
+    environment:
+    - MQTT_QOS=${MQTT_QOS}
   
   alerter:
     build:
@@ -62,6 +66,8 @@ services:
       - iot-net
     env_file:
       - .env
+    environment:
+    - MQTT_QOS=${MQTT_QOS}
   
   # --- 3. Our Dashboard Service ---
   dashboard:
