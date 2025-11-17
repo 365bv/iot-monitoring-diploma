@@ -6,7 +6,7 @@ Uses pytest and pytest-mock.
 import json
 import pytest
 import time
-from data_collector.data_collector import parse_payload, write_to_influxdb
+from data_collector.data_collector import parse_payload, write_to_influxdb_async
 from influxdb_client import Point
 
 TEST_TIMESTAMP_NS = time.time_ns()
@@ -96,7 +96,7 @@ def test_write_to_influxdb_happy_path(mocker):
     }
 
     # Act
-    write_to_influxdb(mock_write_api, sample_data)
+    write_to_influxdb_async(mock_write_api, sample_data)
 
     # Assert
     mock_write_api.write.assert_called_once()
@@ -124,7 +124,7 @@ def test_write_to_influxdb_partial_data(mocker):
     }
 
     # Act
-    write_to_influxdb(mock_write_api, partial_data)
+    write_to_influxdb_async(mock_write_api, partial_data)
 
     # Assert
     mock_write_api.write.assert_called_once()
@@ -150,7 +150,7 @@ def test_write_to_influxdb_no_timestamp(mocker):
     }
 
     # Act
-    write_to_influxdb(mock_write_api, no_time_data)
+    write_to_influxdb_async(mock_write_api, no_time_data)
 
     # Assert
     mock_write_api.write.assert_called_once()
