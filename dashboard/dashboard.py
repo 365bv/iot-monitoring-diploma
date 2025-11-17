@@ -7,11 +7,10 @@ import logging
 from dotenv import load_dotenv
 from typing import List
 
-# --- (Fix: Silence InfluxDB/Pandas Warning) ---
+# --- ( Silence InfluxDB/Pandas Warning) ---
 import warnings
 from influxdb_client.client.warnings import MissingPivotFunction
 warnings.simplefilter("ignore", MissingPivotFunction)
-# --- (End Fix) ---
 
 # --- Load Config (from .env file) ---
 load_dotenv()
@@ -20,6 +19,7 @@ INFLUX_TOKEN = os.getenv("INFLUX_TOKEN")
 INFLUX_ORG = os.getenv("INFLUX_ORG")
 INFLUX_BUCKET = os.getenv("INFLUX_BUCKET")
 
+# --- Logging Configuration ---
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] (dashboard) %(message)s",
@@ -27,7 +27,6 @@ logging.basicConfig(
 )
 
 # --- InfluxDB Connection ---
-# Set up the client and query API
 try:
     influx_client = influxdb_client.InfluxDBClient(
         url=INFLUX_URL, token=INFLUX_TOKEN, org=INFLUX_ORG
@@ -115,12 +114,37 @@ flux_query = f'''
 # --- 3. Fetch and Display Data ---
 data_df = fetch_data(flux_query)
 
+# --- Title Logic ---
+MAX_ITEMS_TO_DISPLAY_IN_TITLE = 3
+if not selected_turbines:
+    st.header("No turbines selected. Please choose from the filter above.", anchor=False)
+else:
+    display_list = ", ".join(selected_turbines[:MAX_ITEMS_TO_DISPLAY_IN_TITLE])
+    remaining_count = len(selected_turbines) - MAX_ITEMS_TO_DISPLAY_IN_TITLE
+    
+    if remaining_count > 0:
+        hover_list = ", ".join(selected_turbines)
+        title_html = f"""
+        <h3 style="margin:0; padding:0;">
+            Live Data for: {display_list}, and 
+            <span title="{hover_list}">
+                [+{remaining_count} more]
+            </span>
+        </h3>
+        """
+        st.markdown(title_html, unsafe_allow_html=True)
+    else:
+        st.header(f"Live Data for: {display_list}", anchor=False)
+# --- End Title Logic ---
+
 if not data_df.empty:
-    # --- (FIX: Use Altair for better, colored charts) ---
     
     # We need _time to be a column, not an index, for Altair
     data_df_for_charts = data_df.reset_index()
 
+    if "latency_ns" in data_df_for_charts.columns:
+        data_df_for_charts["latency_ms"] = data_df_for_charts["latency_ns"] / 1_000_000
+        
     st.subheader("Power Output (kW)", anchor=False)
     # Create the Altair chart
     chart_power = alt.Chart(data_df_for_charts).mark_line(point=True).encode(
@@ -160,10 +184,18 @@ if not data_df.empty:
     ).interactive()
     st.altair_chart(chart_wind, width='stretch')
 
-    # --- (END FIX) ---
+    st.subheader("Data Pipeline Latency (ms)", anchor=False)
+    chart_latency = alt.Chart(data_df_for_charts).mark_line(point=True).encode(
+        x=alt.X('_time', title='Time'),
+        y=alt.Y('latency_ms', title='Latency (ms)'),
+        color=alt.Color('turbine_id', title='Turbine'),
+        tooltip=['_time', 'turbine_id', 'latency_ms']
+    ).interactive()
+    st.altair_chart(chart_latency, width='stretch')
 
     st.subheader("Aggregated Raw Data (Last 20 points)", anchor=False)
     table_df = data_df.drop(columns=['result', 'table'], errors='ignore')
+    table_df["latency_ms"] = table_df["latency_ns"] / 1_000_000
     table_df = table_df.set_index("_time")
     st.dataframe(table_df.tail(20))
 else:
