@@ -3,6 +3,9 @@ import paho.mqtt.client as mqtt
 import json
 import logging
 from typing import Optional, Dict, Any
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # --- Settings ---
 BROKER_ADDRESS = "mqtt_broker"
