@@ -11,7 +11,14 @@ load_dotenv()
 BROKER_ADDRESS = "mqtt_broker"
 PORT = 1883
 MQTT_TOPIC = "norway/energy/wind-turbine/+/status"
-QOS_LEVEL = int(os.getenv("MQTT_QOS", "0"))
+
+# Read QoS setting from environment variable
+qos_input = os.getenv("MQTT_QOS", "0")
+if qos_input in ["0", "1", "2"]:
+    QOS_LEVEL = int(qos_input)
+else:
+    logging.warning(f"Invalid MQTT_QOS value '{qos_input}'. Defaulting to 0.")
+    QOS_LEVEL = 0
 
 # --- Constants ---
 CRITICAL_TEMP_THRESHOLD = 90.0 

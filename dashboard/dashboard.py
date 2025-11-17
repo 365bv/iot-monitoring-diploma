@@ -19,6 +19,14 @@ INFLUX_TOKEN = os.getenv("INFLUX_TOKEN")
 INFLUX_ORG = os.getenv("INFLUX_ORG")
 INFLUX_BUCKET = os.getenv("INFLUX_BUCKET")
 
+# Read QoS setting from environment variable
+qos_input = os.getenv("MQTT_QOS", "0")
+if qos_input in ["0", "1", "2"]:
+    QOS_LEVEL = int(qos_input)
+else:
+    logging.warning(f"Invalid MQTT_QOS value '{qos_input}'. Defaulting to 0.")
+    QOS_LEVEL = 0
+
 # --- Logging Configuration ---
 logging.basicConfig(
     level=logging.INFO,
@@ -184,7 +192,7 @@ if not data_df.empty:
     ).interactive()
     st.altair_chart(chart_wind, width='stretch')
 
-    st.subheader("Data Pipeline Latency (ms)", anchor=False)
+    st.subheader(f"Data Pipeline Latency (ms) — (QoS={QOS_LEVEL})", anchor=False)
     chart_latency = alt.Chart(data_df_for_charts).mark_line(point=True).encode(
         x=alt.X('_time', title='Time'),
         y=alt.Y('latency_ms', title='Latency (ms)'),
