@@ -18,14 +18,7 @@ INFLUX_URL = "http://database:8086"
 INFLUX_TOKEN = os.getenv("INFLUX_TOKEN")
 INFLUX_ORG = os.getenv("INFLUX_ORG")
 INFLUX_BUCKET = os.getenv("INFLUX_BUCKET")
-
-# Read QoS setting from environment variable
-qos_input = os.getenv("MQTT_QOS", "0")
-if qos_input in ["0", "1", "2"]:
-    QOS_LEVEL = int(qos_input)
-else:
-    logging.warning(f"Invalid MQTT_QOS value '{qos_input}'. Defaulting to 0.")
-    QOS_LEVEL = 0
+QOS_LEVEL = int(os.getenv("MQTT_QOS", "0"))
 
 # --- Logging Configuration ---
 logging.basicConfig(

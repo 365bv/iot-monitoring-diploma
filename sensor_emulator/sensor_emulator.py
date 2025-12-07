@@ -15,14 +15,8 @@ BROKER_ADDRESS = "mqtt_broker"
 PORT = 1883
 TURBINE_IDS = [f"WT-{i:02d}" for i in range(1, 51)]
 TOPIC_PREFIX = "norway/energy/wind-turbine"
+QOS_LEVEL = int(os.getenv("MQTT_QOS", "0"))
 
-# Read QoS setting from environment variable
-qos_input = os.getenv("MQTT_QOS", "0")
-if qos_input in ["0", "1", "2"]:
-    QOS_LEVEL = int(qos_input)
-else:
-    logging.warning(f"Invalid MQTT_QOS value '{qos_input}'. Defaulting to 0.")
-    QOS_LEVEL = 0
 
 # --- Simulation Constants ---
 BASE_TEMP_C = 60.0
