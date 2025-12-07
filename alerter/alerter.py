@@ -13,7 +13,7 @@ PORT = 1883
 MQTT_TOPIC = "norway/energy/wind-turbine/+/status"
 
 # Read QoS setting from environment variable
-QOS_LEVEL = os.getenv("MQTT_QOS", "0")
+QOS_LEVEL = int(os.getenv("MQTT_QOS", "0"))
 
 # --- Constants ---
 CRITICAL_TEMP_THRESHOLD = 90.0 
