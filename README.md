@@ -81,6 +81,31 @@ cp .env.example .env
 docker-compose up --build -d
 ```
 
+## Dynamic MQTT QoS Configuration
+
+To analyze network performance under different message reliability guarantees, you can dynamically set the MQTT Quality of Service (QoS) level at runtime.
+
+### Launching with a Specific QoS Level
+
+Use the following command to start the services with a specific QoS level, overriding the default value in the `.env` file. This example sets the QoS level to 2:
+
+```bash
+MQTT_QOS=2 docker-compose up -d
+```
+
+### Understanding MQTT Quality of Service (QoS)
+
+MQTT QoS is a crucial feature that defines the guarantee of message delivery between a publisher (like our sensor emulator) and a subscriber (like our data collector) via the MQTT broker. The QoS level determines the reliability of the message transport, which directly impacts latency and network overhead.
+
+- **QoS 0 (At most once):** This is the fastest delivery option, often called "fire and forget." Messages are sent without confirmation of receipt.
+  - **Use Case:** Best for high-frequency, non-critical data where occasional message loss is acceptable. Minimizes latency and network traffic.
+- **QoS 1 (At least once):** This level guarantees that a message will be delivered at least one time. The sender stores the message until it receives a confirmation (PUBACK packet) from the receiver. If no confirmation is received, the message is resent, which could result in duplicate messages.
+  - **Use Case:** Suitable for important data where message loss is not an option, but duplicate processing can be handled.
+- **QoS 2 (Exactly once):** This is the most reliable but also the slowest delivery level. It uses a four-part handshake to ensure the message is delivered exactly once, preventing both loss and duplication.
+  - **Use Case:** Critical for systems where data integrity is paramount and duplicate messages would cause errors, such as financial transactions or, in our case, precise command-and-control signals for the turbine.
+
+Testing with different QoS levels is vital for this project to quantify the trade-offs between message reliability, network latency, and system overhead in a simulated industrial IoT environment.
+
 ### 4. View the Dashboard
 
 1. Wait about 30-60 seconds for all services to start and for data to begin flowing.

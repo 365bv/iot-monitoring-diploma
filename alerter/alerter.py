@@ -1,12 +1,19 @@
+import os
 import paho.mqtt.client as mqtt
 import json
 import logging
 from typing import Optional, Dict, Any
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # --- Settings ---
 BROKER_ADDRESS = "mqtt_broker"
 PORT = 1883
 MQTT_TOPIC = "norway/energy/wind-turbine/+/status"
+
+# Read QoS setting from environment variable
+QOS_LEVEL = int(os.getenv("MQTT_QOS", "0"))
 
 # --- Constants ---
 CRITICAL_TEMP_THRESHOLD = 90.0 
@@ -33,13 +40,13 @@ def on_connect(client: mqtt.Client, userdata, flags, rc: int):
     """Callback for when the client connects."""
     if rc == 0:
         logging.info(f"✅ [MQTT] Successfully connected to broker {BROKER_ADDRESS}")
-        client.subscribe(MQTT_TOPIC)
+        client.subscribe(MQTT_TOPIC, qos=QOS_LEVEL)
     else:
         logging.error(f"❌ [MQTT] Connection failed with code: {rc}")
 
 def on_subscribe(client: mqtt.Client, userdata, mid, granted_qos):
     """Callback for when the client successfully subscribes."""
-    logging.info(f"🔔 [MQTT] Subscribed to topic: {MQTT_TOPIC}")
+    logging.info(f"🔔 [MQTT] Subscribed to topic: {MQTT_TOPIC} (QoS: {QOS_LEVEL})")
 
 def check_for_anomalies(data: Dict[str, Any]):
     """
