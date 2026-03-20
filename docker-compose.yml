@@ -85,6 +85,8 @@ services:
       - iot-net
     env_file:
       - .env
+    environment:
+    - MQTT_QOS=${MQTT_QOS}
       
 volumes:
   mosquitto_data:
