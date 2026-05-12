@@ -77,8 +77,15 @@ cp .env.example .env
 ```
 ### 3. Build and Run the System
 
+**Typical Run (with Web UI):**
 ```sh
 docker-compose up --build -d
+```
+
+**Run in backend Mode:**
+To run only the backend services (MQTT, InfluxDB, Emulator) without consuming resources for the Streamlit dashboard, use the empty profile:
+```sh
+COMPOSE_PROFILES="" docker-compose up -d
 ```
 
 ## Dynamic MQTT QoS Configuration
