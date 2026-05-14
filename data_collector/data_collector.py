@@ -5,7 +5,6 @@ import os
 import logging
 import time
 from dotenv import load_dotenv
-from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import ASYNCHRONOUS
 from typing import Optional, Dict, Any
 
@@ -26,6 +25,7 @@ INFLUX_BUCKET = os.getenv("INFLUX_BUCKET")
 
 # --- Logic ---
 
+
 def parse_payload(payload: bytes) -> Optional[Dict[str, Any]]:
     """
     Parses the raw byte payload into a Python dictionary.
@@ -42,6 +42,7 @@ def parse_payload(payload: bytes) -> Optional[Dict[str, Any]]:
         logging.error(f"🔥 An unexpected error occurred in parse_payload: {e}")
         return None
 
+
 def on_connect(client: mqtt.Client, userdata, flags, rc: int):
     """Callback for when the client connects."""
     if rc == 0:
@@ -50,10 +51,12 @@ def on_connect(client: mqtt.Client, userdata, flags, rc: int):
         client.subscribe(MQTT_TOPIC, qos=QOS_LEVEL)
     else:
         logging.error(f"❌ [MQTT] Connection failed with code: {rc}")
-        
+
+
 def on_subscribe(client: mqtt.Client, userdata, mid, granted_qos):
     """Callback for when the client successfully subscribes."""
     logging.info(f"🔔 [MQTT] Subscribed to topic: {MQTT_TOPIC} (QoS: {QOS_LEVEL})")
+
 
 def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
     """
@@ -61,12 +64,13 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
     This is the core logic of the collector.
     """
     data = parse_payload(msg.payload)
-    
+
     if data:
-       write_to_influxdb_async(userdata['influx_write_api'], data)
+        write_to_influxdb_async(userdata["influx_write_api"], data)
     else:
         # The error is already logged inside parse_payload
         pass
+
 
 def write_to_influxdb_async(write_api: influxdb_client.WriteApi, data: Dict[str, Any]):
     """Formats and writes a data point to InfluxDB asynchronously."""
@@ -74,10 +78,10 @@ def write_to_influxdb_async(write_api: influxdb_client.WriteApi, data: Dict[str,
         recived_at_ns = time.time_ns()
         sent_an_ns = data.get("timestamp_ns")
         latency_ns = None
-        
+
         if sent_an_ns:
             latency_ns = recived_at_ns - sent_an_ns
-            
+
         point = (
             influxdb_client.Point("turbine_status")
             .tag("turbine_id", data.get("turbine_id", "Unknown"))
@@ -86,9 +90,11 @@ def write_to_influxdb_async(write_api: influxdb_client.WriteApi, data: Dict[str,
             .field("power_output_kw", data.get("power_output_kw"))
             .field("gearbox_temp_c", data.get("gearbox_temp_c"))
             .field("latency_ns", latency_ns)
-            .time(data.get("timestamp_ns"), write_precision="ns") # 'ns' for nanoseconds
+            .time(
+                data.get("timestamp_ns"), write_precision="ns"
+            )  # 'ns' for nanoseconds
         )
-        
+
         write_api.write(bucket=INFLUX_BUCKET, org=INFLUX_ORG, record=point)
 
         logging.debug(f"✅ [InfluxDB] Wrote data for {data.get('turbine_id')}")
@@ -97,35 +103,39 @@ def write_to_influxdb_async(write_api: influxdb_client.WriteApi, data: Dict[str,
         logging.error(f"🔥 [InfluxDB] Error writing to database: {e}")
 
 
-def setup_mqtt_client(influx_write_api: influxdb_client.WriteApi) -> Optional[mqtt.Client]:
+def setup_mqtt_client(
+    influx_write_api: influxdb_client.WriteApi,
+) -> Optional[mqtt.Client]:
     """Creates, configures, and connects the MQTT client."""
-    
+
     # We will pass the InfluxDB client object into the MQTT client's 'userdata'
     # This makes it accessible inside the on_message callback
-    client = mqtt.Client(userdata={"influx_write_api": influx_write_api})
-    
+    client = mqtt.Client(
+        mqtt.CallbackAPIVersion.VERSION1,
+        userdata={"influx_write_api": influx_write_api},
+    )
+
     client.on_connect = on_connect
     client.on_message = on_message
     client.on_subscribe = on_subscribe
-    
+
     try:
         client.connect(BROKER_ADDRESS, PORT, 60)
     except Exception as e:
         logging.error(f"🔥 [MQTT] Failed to connect to broker: {e}")
         return None
-    return client 
+    return client
+
 
 def run_collector():
     """Starts the data collector."""
-    
+
     # 1. Set up InfluxDB Client
     try:
         influx_client = influxdb_client.InfluxDBClient(
-            url=INFLUX_URL,
-            token=INFLUX_TOKEN,
-            org=INFLUX_ORG
+            url=INFLUX_URL, token=INFLUX_TOKEN, org=INFLUX_ORG
         )
-       # --- Use ASYNCHRONOUS (batching) write mode ---
+        # --- Use ASYNCHRONOUS (batching) write mode ---
         # The client will auto-collect points in a buffer
         write_api = influx_client.write_api(write_options=ASYNCHRONOUS)
         logging.info("✅ [InfluxDB] Successfully connected")
@@ -135,13 +145,13 @@ def run_collector():
 
     # 2. Set up MQTT Client (and give it the InfluxDB writer)
     mqtt_client = setup_mqtt_client(write_api)
-    
+
     if mqtt_client is None:
         logging.critical("Exiting program, MQTT client setup failed.")
         return
 
     logging.info("🎧 Data collector is now listening for messages...")
-    
+
     try:
         mqtt_client.loop_forever()
     except KeyboardInterrupt:
@@ -151,13 +161,13 @@ def run_collector():
         write_api.close()
         influx_client.close()
         logging.info("Shutdown complete.")
-        
-if __name__ == "__main__":
 
+
+if __name__ == "__main__":
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] (data_collector) %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
     try:
