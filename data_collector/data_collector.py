@@ -15,7 +15,9 @@ load_dotenv()
 BROKER_ADDRESS = "mqtt_broker"
 PORT = 1883
 MQTT_TOPIC = "norway/energy/wind-turbine/+/status"
-QOS_LEVEL = int(os.getenv("MQTT_QOS", "0"))
+CONTROL_TOPIC = "sim/control/turbine_count"
+
+current_qos = int(os.getenv("MQTT_QOS", "0"))
 
 # InfluxDB Settings
 INFLUX_URL = "http://database:8086"
@@ -45,17 +47,17 @@ def parse_payload(payload: bytes) -> Optional[Dict[str, Any]]:
 
 def on_connect(client: mqtt.Client, userdata, flags, rc: int):
     """Callback for when the client connects."""
+    global current_qos
     if rc == 0:
         logging.info(f"✅ [MQTT] Successfully connected to broker {BROKER_ADDRESS}")
-        # Subscribing in on_connect ensures we re-subscribe if connection is lost
-        client.subscribe(MQTT_TOPIC, qos=QOS_LEVEL)
+        client.subscribe(MQTT_TOPIC, qos=current_qos)
+        client.subscribe(CONTROL_TOPIC, qos=1)
     else:
         logging.error(f"❌ [MQTT] Connection failed with code: {rc}")
 
 
 def on_subscribe(client: mqtt.Client, userdata, mid, granted_qos):
-    """Callback for when the client successfully subscribes."""
-    logging.info(f"🔔 [MQTT] Subscribed to topic: {MQTT_TOPIC} (QoS: {QOS_LEVEL})")
+    pass
 
 
 def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
@@ -63,13 +65,26 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
     Callback for when a message is received.
     This is the core logic of the collector.
     """
-    data = parse_payload(msg.payload)
+    global current_qos
+    
+    if msg.topic == CONTROL_TOPIC:
+        try:
+            payload = json.loads(msg.payload.decode("utf-8"))
+            if "qos" in payload:
+                new_qos = int(payload["qos"])
+                if new_qos != current_qos:
+                    current_qos = new_qos
+                    client.subscribe(MQTT_TOPIC, qos=current_qos)
+                    logging.info(f"🔄 Data Collector dynamically updated subscription QoS to: {current_qos}")
+        except Exception:
+            pass
+        return
 
+    data = parse_payload(msg.payload)
+    
     if data:
         write_to_influxdb_async(userdata["influx_write_api"], data)
-    else:
-        # The error is already logged inside parse_payload
-        pass
+
 
 
 def write_to_influxdb_async(write_api: influxdb_client.WriteApi, data: Dict[str, Any]):

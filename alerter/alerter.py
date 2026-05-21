@@ -11,9 +11,10 @@ load_dotenv()
 BROKER_ADDRESS = "mqtt_broker"
 PORT = 1883
 MQTT_TOPIC = "norway/energy/wind-turbine/+/status"
+CONTROL_TOPIC = "sim/control/turbine_count"
 
 # Read QoS setting from environment variable
-QOS_LEVEL = int(os.getenv("MQTT_QOS", "0"))
+current_qos = int(os.getenv("MQTT_QOS", "0"))
 
 # --- Constants ---
 CRITICAL_TEMP_THRESHOLD = 90.0
@@ -40,41 +41,35 @@ def parse_payload(payload: bytes) -> Optional[Dict[str, Any]]:
 
 def on_connect(client: mqtt.Client, userdata, flags, rc: int):
     """Callback for when the client connects."""
+    global current_qos
     if rc == 0:
         logging.info(f"✅ [MQTT] Successfully connected to broker {BROKER_ADDRESS}")
-        client.subscribe(MQTT_TOPIC, qos=QOS_LEVEL)
+        
+        client.subscribe(MQTT_TOPIC, qos=current_qos)
+        client.subscribe(CONTROL_TOPIC, qos=1)
     else:
         logging.error(f"❌ [MQTT] Connection failed with code: {rc}")
 
 
 def on_subscribe(client: mqtt.Client, userdata, mid, granted_qos):
-    """Callback for when the client successfully subscribes."""
-    logging.info(f"🔔 [MQTT] Subscribed to topic: {MQTT_TOPIC} (QoS: {QOS_LEVEL})")
+    pass
 
-
-def check_for_anomalies(client: mqtt.Client, data: Dict[str, Any]):
-    """
-    This is the core logic for the alerter.
-    It checks incoming data against predefined rules and publishes alerts.
-    """
+def check_for_anomalies(client: mqtt.Client, data: Dict[str, Any], qos_level: int):
+    """Checks incoming data against predefined rules and publishes alerts."""
     try:
         turbine_id = data.get("turbine_id", "Unknown")
         alert_msg = None
 
-        # --- Rule 1: Check for anomaly flag (from sensor) ---
+
         if data.get("is_anomaly"):
             alert_msg = f"Critical Sensor Anomaly detected for {turbine_id}!"
-            logging.critical(f"🚨 CRITICAL ALERT (from sensor): {alert_msg}")
-
-        # --- Rule 2: Check for high temperature ---
+            logging.critical(f"🚨 CRITICAL ALERT (from sensor): {alert_msg} [Running at QoS {qos_level}]")
         elif (
             data.get("gearbox_temp_c") is not None
             and data.get("gearbox_temp_c") > CRITICAL_TEMP_THRESHOLD
         ):
             alert_msg = f"Gearbox overheating on {turbine_id}! Temp: {data.get('gearbox_temp_c')}°C"
-            logging.critical(f"🚨 CRITICAL ALERT (rule breach): {alert_msg}")
-
-        # --- Publish to macOS if an alert was triggered ---
+            logging.critical(f"🚨 CRITICAL ALERT (rule breach): {alert_msg} [Running at QoS {qos_level}]")
         if alert_msg:
             alert_payload = json.dumps({
                 "turbine_id": turbine_id,
@@ -88,12 +83,25 @@ def check_for_anomalies(client: mqtt.Client, data: Dict[str, Any]):
 
 def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
     """Callback for when a message is received."""
+    global current_qos
+    
+    if msg.topic == CONTROL_TOPIC:
+        try:
+            payload = json.loads(msg.payload.decode("utf-8"))
+            if "qos" in payload:
+                new_qos = int(payload["qos"])
+                if new_qos != current_qos:
+                    current_qos = new_qos
+                    client.subscribe(MQTT_TOPIC, qos=current_qos)
+                    logging.info(f"🔄 Alerter dynamically updated subscription QoS to: {current_qos}")
+        except Exception as e:
+            logging.error(f"Failed to parse control message: {e}")
+        return
+
     data = parse_payload(msg.payload)
 
     if data:
-        check_for_anomalies(client, data)
-    else:
-        pass
+        check_for_anomalies(client, data, current_qos)
 
 
 def setup_client() -> Optional[mqtt.Client]:
