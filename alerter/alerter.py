@@ -52,41 +52,46 @@ def on_subscribe(client: mqtt.Client, userdata, mid, granted_qos):
     logging.info(f"🔔 [MQTT] Subscribed to topic: {MQTT_TOPIC} (QoS: {QOS_LEVEL})")
 
 
-def check_for_anomalies(data: Dict[str, Any]):
+def check_for_anomalies(client: mqtt.Client, data: Dict[str, Any]):
     """
     This is the core logic for the alerter.
-    It checks incoming data against predefined rules.
+    It checks incoming data against predefined rules and publishes alerts.
     """
     try:
         turbine_id = data.get("turbine_id", "Unknown")
+        alert_msg = None
 
         # --- Rule 1: Check for anomaly flag (from sensor) ---
         if data.get("is_anomaly"):
-            logging.critical(
-                f"🚨 CRITICAL ALERT (from sensor): Anomaly detected for {turbine_id}!"
-                f" Payload: {json.dumps(data)}"
-            )
+            alert_msg = f"Critical Sensor Anomaly detected for {turbine_id}!"
+            logging.critical(f"🚨 CRITICAL ALERT (from sensor): {alert_msg}")
 
         # --- Rule 2: Check for high temperature ---
         elif (
             data.get("gearbox_temp_c") is not None
             and data.get("gearbox_temp_c") > CRITICAL_TEMP_THRESHOLD
         ):
-            logging.critical(
-                f"🚨 CRITICAL ALERT (rule breach): Gearbox overheating on {turbine_id}!"
-                f" Temperature: {data.get('gearbox_temp_c')}°C"
-            )
+            alert_msg = f"Gearbox overheating on {turbine_id}! Temp: {data.get('gearbox_temp_c')}°C"
+            logging.critical(f"🚨 CRITICAL ALERT (rule breach): {alert_msg}")
+
+        # --- Publish to macOS if an alert was triggered ---
+        if alert_msg:
+            alert_payload = json.dumps({
+                "turbine_id": turbine_id,
+                "message": alert_msg,
+                "timestamp": data.get("timestamp_ns", 0)
+            })
+            client.publish("norway/energy/alerts", alert_payload, qos=QOS_LEVEL)
 
     except Exception as e:
         logging.error(f"🔥 Error processing rules: {e}")
-
 
 def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
     """Callback for when a message is received."""
     data = parse_payload(msg.payload)
 
     if data:
-        check_for_anomalies(data)
+        check_for_anomalies(client, data)
     else:
         pass
 
