@@ -35,6 +35,17 @@ logging.basicConfig(
 active_turbines: Dict[str, threading.Event] = {}
 turbines_lock = threading.Lock()
 
+current_qos_level = QOS_LEVEL
+qos_lock = threading.Lock()
+
+def get_qos() -> int:
+    with qos_lock:
+        return current_qos_level
+
+def set_qos(new_qos: int):
+    global current_qos_level
+    with qos_lock:
+        current_qos_level = new_qos
 # --- Logic for a single turbine thread ---
 
 
@@ -139,7 +150,7 @@ def run_single_turbine_emulator(turbine_id: str, stop_event: threading.Event):
             )
 
             topic = f"{TOPIC_PREFIX}/{turbine_id}/status"
-            result = client.publish(topic, payload, qos=QOS_LEVEL)
+            result = client.publish(topic, payload, qos=get_qos())
 
             if result.rc != mqtt.MQTT_ERR_SUCCESS:
                 logging.warning(
@@ -197,6 +208,7 @@ def set_turbine_count(target_count: int):
 def on_control_message(client, userdata, msg):
     try:
         payload = json.loads(msg.payload.decode("utf-8"))
+        
         if "count" in payload:
             target_count = int(payload["count"])
             target_count = max(0, target_count)  # Prevent negative
@@ -208,6 +220,14 @@ def on_control_message(client, userdata, msg):
                 daemon=True,
                 name="TurbineScaler",
             ).start()
+            
+        if "qos" in payload:
+            target_qos = int(payload["qos"])
+            target_qos = max(0, min(2, target_qos)) # Clamp between 0 and 2
+            
+            if get_qos() != target_qos:
+                set_qos(target_qos)
+                logging.info(f"📶 QoS dynamically updated to {target_qos}")
 
     except Exception as e:
         logging.error(f"Failed to process control message: {e}")
