@@ -53,7 +53,7 @@ def on_connect(client: mqtt.Client, userdata, flags, rc: int):
     """Callback function executed when the client connects to the broker."""
     if rc == 0:
         logging.info(
-            f"✅ MQTT Client for {userdata['turbine_id']} connected (QoS: {QOS_LEVEL})"
+            f"✅ MQTT Client for {userdata['turbine_id']} connected (QoS: {get_qos()})"
         )
         client.connected_flag = True
     else:
