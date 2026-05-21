@@ -209,6 +209,14 @@ def on_control_message(client, userdata, msg):
     try:
         payload = json.loads(msg.payload.decode("utf-8"))
         
+        if "qos" in payload:
+            target_qos = int(payload["qos"])
+            target_qos = max(0, min(2, target_qos)) # Clamp between 0 and 2
+            
+            if get_qos() != target_qos:
+                set_qos(target_qos)
+                logging.info(f"📶 QoS dynamically updated to {target_qos}")
+
         if "count" in payload:
             target_count = int(payload["count"])
             target_count = max(0, target_count)  # Prevent negative
@@ -220,14 +228,7 @@ def on_control_message(client, userdata, msg):
                 daemon=True,
                 name="TurbineScaler",
             ).start()
-            
-        if "qos" in payload:
-            target_qos = int(payload["qos"])
-            target_qos = max(0, min(2, target_qos)) # Clamp between 0 and 2
-            
-            if get_qos() != target_qos:
-                set_qos(target_qos)
-                logging.info(f"📶 QoS dynamically updated to {target_qos}")
+
 
     except Exception as e:
         logging.error(f"Failed to process control message: {e}")
