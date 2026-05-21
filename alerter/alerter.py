@@ -81,7 +81,7 @@ def check_for_anomalies(client: mqtt.Client, data: Dict[str, Any]):
                 "message": alert_msg,
                 "timestamp": data.get("timestamp_ns", 0)
             })
-            client.publish("norway/energy/alerts", alert_payload, qos=QOS_LEVEL)
+            client.publish("norway/energy/alerts", alert_payload, qos=1)
 
     except Exception as e:
         logging.error(f"🔥 Error processing rules: {e}")
